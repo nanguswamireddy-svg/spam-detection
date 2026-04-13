@@ -1,0 +1,389 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Machine Learning based email and SMS spam detection system using Multinomial Naive Bayes and TF-IDF vectorization.">
+    <title>Spam Detection System | Machine Learning Project</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top shadow" aria-label="Main navigation">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('home') }}"><i class="fas fa-shield-virus me-2"></i>Spam Detection System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="#">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#analytics">Analytics</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#docs">Documentation</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <header class="project-header text-center py-5" id="top">
+        <div class="container">
+            <h1 class="display-4 fw-bold">Machine Learning Based Spam Detection System</h1>
+            <p class="lead mb-0">Multinomial Naive Bayes + TF-IDF vectorization for accurate SMS / email spam classification.</p>
+        </div>
+    </header>
+
+    <main class="container my-5">
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="glass-card p-4 h-100">
+                    <h3 class="mb-4"><i class="fas fa-terminal me-2"></i>Prediction Engine</h3>
+                    <form method="POST" action="{{ url_for('home') }}" novalidate>
+                        <div class="form-group mb-4">
+                            <label for="message_content" class="form-label fw-semibold">Message Content</label>
+                            <textarea id="message_content" name="message_content" class="form-control" rows="8" placeholder="Type or paste the SMS / email text to analyze for spam..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-action w-100 btn-lg">
+                            <i class="fas fa-search me-2"></i>Execute Analysis
+                        </button>
+                    </form>
+
+                    {% if result %}
+                    <div class="mt-4 animate-fade-in">
+                        <div class="alert {{ 'alert-danger' if result.category == 'SPAM' else 'alert-success' }} d-flex align-items-center shadow-sm">
+                            <i class="fas {{ 'fa-exclamation-triangle' if result.category == 'SPAM' else 'fa-check-circle' }} fa-2x me-3"></i>
+                            <div>
+                                <h4 class="alert-heading mb-0">Classification: {{ result.category }}</h4>
+                                <p class="mb-0">Confidence Score: <strong>{{ result.confidence }}%</strong></p>
+                            </div>
+                        </div>
+                        <div class="p-3 bg-light rounded border mt-2">
+                            <small class="text-muted text-uppercase fw-bold">Analyzed Text Fragment:</small>
+                            <p class="mb-0 italic">"{{ result.text[:200] }}{{ '...' if result.text|length > 200 }}"</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="glass-card p-4 stat-border-primary">
+                            <h5><i class="fas fa-chart-line me-2"></i>Model Performance Summary</h5>
+                            <div class="d-flex justify-content-between align-items-center mt-3 text-center">
+                                <div class="flex-fill">
+                                    <h2 class="mb-0">{{ accuracy }}%</h2>
+                                    <small class="text-muted text-uppercase">Accuracy</small>
+                                </div>
+                                <div class="flex-fill">
+                                    <h2 class="mb-0">{{ precision }}%</h2>
+                                    <small class="text-muted text-uppercase">Precision</small>
+                                </div>
+                                <div class="flex-fill">
+                                    <h2 class="mb-0">{{ recall }}%</h2>
+                                    <small class="text-muted text-uppercase">Recall</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12" id="analytics">
+                        <div class="glass-card p-4 text-center">
+                            <h5><i class="fas fa-th me-2"></i>Confusion Matrix</h5>
+                            <img src="data:image/png;base64,{{ plot_url }}" class="img-fluid rounded mt-3 shadow-sm" alt="Confusion Matrix Graph">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="mt-5" id="docs">
+            <div class="glass-card p-4">
+                <h3 class="mb-4">Advanced Model Metrics</h3>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Class Label</th>
+                                <th>Precision (P)</th>
+                                <th>Recall (R)</th>
+                                <th>F1-Score</th>
+                                <th>Support</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-success">HAM (Normal)</span></td>
+                                <td>{{ report['ham']['precision']|round(4) }}</td>
+                                <td>{{ report['ham']['recall']|round(4) }}</td>
+                                <td>{{ report['ham']['f1-score']|round(4) }}</td>
+                                <td>{{ report['ham']['support'] }}</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-danger">SPAM (Junk)</span></td>
+                                <td>{{ report['spam']['precision']|round(4) }}</td>
+                                <td>{{ report['spam']['recall']|round(4) }}</td>
+                                <td>{{ report['spam']['f1-score']|round(4) }}</td>
+                                <td>{{ report['spam']['support'] }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">Major Project: Machine Learning Based Spam Detection System</p>
+            <small class="text-muted">Department of Computer Science & Engineering</small>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Professional ML-based Spam Detection using Multinomial Naive Bayes.">
+    <title>SpamGuard AI | Advanced Message Analysis</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --glass-bg: rgba(255, 255, 255, 0.95);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f9;
+            color: #2d3748;
+        }
+
+        .navbar {
+            background: var(--primary-gradient) !important;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-section {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 60px 0 100px;
+            clip-path: ellipse(150% 100% at 50% 0%);
+        }
+
+        .main-content {
+            margin-top: -60px;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .btn-predict {
+            background: var(--primary-gradient);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-predict:hover {
+            opacity: 0.9;
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+            color: white;
+        }
+
+        .metric-card {
+            border-left: 4px solid #764ba2;
+            padding: 15px;
+        }
+
+        .status-badge {
+            font-size: 0.9rem;
+            padding: 8px 16px;
+            border-radius: 50px;
+        }
+
+        .conf-matrix-img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+        }
+
+        /* Loading Spinner Animation */
+        #loader { display: none; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="#">
+                <i class="fas fa-shield-halved me-2"></i>SpamGuard AI
+            </a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="#analytics">Model Stats</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#docs">Technical Docs</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero-section text-center">
+        <div class="container">
+            <h1 class="display-5 fw-bold mb-3">Intelligent Spam Detection</h1>
+            <p class="lead opacity-75">Detecting malicious intent using Multinomial Naive Bayes & TF-IDF</p>
+        </div>
+    </header>
+
+    <main class="container main-content mb-5">
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="glass-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="mb-0 fw-bold"><i class="fas fa-magnifying-glass-chart me-2 text-primary"></i>Analyze Message</h4>
+                        <span class="text-muted small">Max 5000 characters</span>
+                    </div>
+
+                    <form method="POST" action="{{ url_for('home') }}" id="predictionForm">
+                        <div class="mb-4">
+                            <textarea id="message_content" name="message_content" 
+                                      class="form-control shadow-sm" rows="10" 
+                                      placeholder="Paste your email or SMS content here..." 
+                                      style="border-radius: 12px; border: 1px solid #e2e8f0;" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-predict w-100 btn-lg" id="submitBtn">
+                            <span id="btnText"><i class="fas fa-bolt me-2"></i>Run Classification</span>
+                            <span id="loader" class="spinner-border spinner-border-sm" role="status"></span>
+                        </button>
+                    </form>
+
+                    {% if result %}
+                    <div class="mt-4 animate-fade-in">
+                        <div class="p-4 rounded-4 shadow-sm {{ 'bg-danger-subtle border border-danger' if result.category == 'SPAM' else 'bg-success-subtle border border-success' }}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="fw-bold mb-1">
+                                        Result: <span class="{{ 'text-danger' if result.category == 'SPAM' else 'text-success' }}">{{ result.category }}</span>
+                                    </h5>
+                                    <p class="mb-0 text-muted">Probability: <strong>{{ result.confidence }}%</strong></p>
+                                </div>
+                                <i class="fas {{ 'fa-triangle-exclamation text-danger' if result.category == 'SPAM' else 'fa-circle-check text-success' }} fa-3x"></i>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="fw-bold mb-4"><i class="fas fa-gauge-high me-2 text-primary"></i>System Health</h5>
+                    <div class="row g-3">
+                        <div class="col-4 text-center border-end">
+                            <div class="h3 fw-bold mb-0 text-primary">{{ accuracy }}%</div>
+                            <small class="text-uppercase text-muted" style="font-size: 0.7rem;">Accuracy</small>
+                        </div>
+                        <div class="col-4 text-center border-end">
+                            <div class="h3 fw-bold mb-0 text-info">{{ precision }}%</div>
+                            <small class="text-uppercase text-muted" style="font-size: 0.7rem;">Precision</small>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="h3 fw-bold mb-0 text-success">{{ recall }}%</div>
+                            <small class="text-uppercase text-muted" style="font-size: 0.7rem;">Recall</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-4" id="analytics">
+                    <h5 class="fw-bold mb-3"><i class="fas fa-chart-pie me-2 text-primary"></i>Confusion Matrix</h5>
+                    <div class="text-center bg-light p-2 rounded">
+                        <img src="data:image/png;base64,{{ plot_url }}" class="conf-matrix-img" alt="Confusion Matrix">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="mt-5" id="docs">
+            <div class="glass-card p-4">
+                <h4 class="fw-bold mb-4"><i class="fas fa-file-lines me-2 text-primary"></i>Classification Report</h4>
+                <div class="table-responsive">
+                    <table class="table table-borderless align-middle">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="rounded-start">Label</th>
+                                <th>Precision</th>
+                                <th>Recall</th>
+                                <th>F1-Score</th>
+                                <th class="rounded-end">Samples</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-success-subtle text-success border border-success px-3">HAM</span></td>
+                                <td class="fw-semibold">{{ report['ham']['precision']|round(3) }}</td>
+                                <td>{{ report['ham']['recall']|round(3) }}</td>
+                                <td>{{ report['ham']['f1-score']|round(3) }}</td>
+                                <td class="text-muted">{{ report['ham']['support'] }}</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-danger-subtle text-danger border border-danger px-3">SPAM</span></td>
+                                <td class="fw-semibold">{{ report['spam']['precision']|round(3) }}</td>
+                                <td>{{ report['spam']['recall']|round(3) }}</td>
+                                <td>{{ report['spam']['f1-score']|round(3) }}</td>
+                                <td class="text-muted">{{ report['spam']['support'] }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-dark text-white-50 py-5 mt-auto">
+        <div class="container text-center">
+            <p class="mb-1 text-white">Machine Learning Classification Project</p>
+            <p class="small mb-0">Developed for Department of Computer Science & Engineering</p>
+            <div class="mt-3">
+                <i class="fab fa-python mx-2"></i>
+                <i class="fas fa-microchip mx-2"></i>
+                <i class="fas fa-database mx-2"></i>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Simple UI Interaction for Loading State
+        const form = document.getElementById('predictionForm');
+        const btn = document.getElementById('submitBtn');
+        const loader = document.getElementById('loader');
+        const btnText = document.getElementById('btnText');
+
+        form.addEventListener('submit', () => {
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            loader.style.display = 'inline-block';
+        });
+    </script>
+</body>
+</html>
